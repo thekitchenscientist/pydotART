@@ -6,8 +6,6 @@ Created on Wed May 26 19:49:15 2021
 """
 
 import numpy as np
-import seaborn as sb
-
 
 ## tile dictionary ##
 tile_dict = {0:" ",
@@ -24,7 +22,10 @@ tile_dict = {0:" ",
         4.3:"D",
         4.4:"U",
         5:"☆",
-        6:"♡"}
+        6:"♡",
+        7:"🧀",
+        8:"🎩",
+        9:"🧁"}
 
 ## pre-programmed patterns based on DOTS packaging##
 pattern = {
@@ -52,6 +53,14 @@ pattern = {
 
 "butterfly" : np.array([[3.2,3.1],
                         [3.3,3.4]
+                        ]) ,
+
+"shield" : np.array([[1,1],
+                        [3.4,3.3]
+                        ])  ,
+
+"leaf" : np.array([[3.1,1],
+                        [1,3.3]
                         ]) 
     }
 
@@ -331,8 +340,11 @@ def Plot_Pattern(colour_pattern):
     for i in range(0, len(legend[:][0])):
         legend[i] = [tile_dict.get(j, j) for j in legend[i]]
     
-    sb.heatmap(colours_used,annot=legend, fmt = '', cmap="Pastel2_r")    
-
+    try:
+        import seaborn as sb
+        sb.heatmap(colours_used,annot=legend, fmt = '', cmap="Pastel2_r")    
+    except:
+        print(colour_pattern[8])
 
 ### Run Program ###
 cutout=np.array([3,3,4,4])
