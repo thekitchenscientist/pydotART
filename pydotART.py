@@ -64,6 +64,8 @@ pattern = {
                         ]) 
     }
 
+colour_modes = ['alternating', 'sequence', 'random', 'pass']
+
 ### Configuration ###
 # What tiles are avaiable [Colour,Shape,Amount]
 palette = np.array([[1,3.,16],
@@ -142,7 +144,7 @@ def Tile_Check(canvas,canvas_seed,palette,pattern,translation):
 """
 The aim of this function is to place the tiles for one pass across the canvas
 """
-def Pattern(canvas,starting_x,starting_y,pattern,translation,tile_ID,wrap=True):
+def Pattern(canvas,starting_x,starting_y,pattern,translation,tile_ID,wrap=True,rotate=-1):
 
     x = canvas[0]
     y = canvas[1]
@@ -157,8 +159,14 @@ def Pattern(canvas,starting_x,starting_y,pattern,translation,tile_ID,wrap=True):
         #don't start if there is no room
         if i ==0:
             if current_x+1 <= x-1 and current_positions[current_x+1][current_y] > 0 and len(tesselation[0:])>1:
-                print('cant start')
+                #print('cant start')
                 break
+        #randomise pattern orientation
+        if rotate >=0 and tesselation.shape[0]==tesselation.shape[1]:
+           new_pattern = Rotate_Pattern(pattern,rotate)
+           tesselation = np.floor(new_pattern)
+        else:
+           new_pattern = pattern 
         
         for j in range(0,len(tesselation[0:])):
             if current_y > y-1:
@@ -181,7 +189,7 @@ def Pattern(canvas,starting_x,starting_y,pattern,translation,tile_ID,wrap=True):
                     if current_positions[current_x+j][current_y+k] > 0:
                         #print('taken')
                         break
-                    current_solution[current_x+j][current_y+k] = pattern[j][k]
+                    current_solution[current_x+j][current_y+k] = new_pattern[j][k]
                     current_positions[current_x+j][current_y+k] = tile_ID                    
                 except:
                     print([i,j,k,current_x+j,current_y+k,tesselation[j][k]])
@@ -212,7 +220,7 @@ def Pattern(canvas,starting_x,starting_y,pattern,translation,tile_ID,wrap=True):
 The aim of this function is to control the tiling passes across the canvas and
 return the output pattern
 """ 
-def Tile_Pattern(canvas,canvas_seed,pattern,translation,fill=True,wrap=True,tile_ID = 1):
+def Tile_Pattern(canvas,canvas_seed,pattern,translation,fill=True,wrap=True,rotate=-1,tile_ID = 1):
     offset_x = canvas_seed[0]
     offset_y = canvas_seed[1]
     tesselation = np.floor(pattern)
@@ -228,7 +236,7 @@ def Tile_Pattern(canvas,canvas_seed,pattern,translation,fill=True,wrap=True,tile
             
     for i in range(0,extent_x):
         for j in range(0,extent_y):                       
-            result = Pattern(canvas,offset_x+i*width_x,offset_y+j*width_y,pattern,translation,tile_ID,wrap)
+            result = Pattern(canvas,offset_x+i*width_x,offset_y+j*width_y,pattern,translation,tile_ID,wrap,rotate)
             canvas[8][0] = result[0].copy()
             canvas[8][1] = result[1].copy()
             tile_ID = result[2]      
@@ -238,13 +246,41 @@ def Tile_Pattern(canvas,canvas_seed,pattern,translation,fill=True,wrap=True,tile
     return canvas
 
 """
+The aim of this function is to control the tiling passes across the canvas and
+return the output pattern
+""" 
+def Rotate_Pattern(pattern, angle=0):
+    
+    if angle == 0:
+        rotations = np.random.randint(1,4)
+    else:
+        rotations = int(angle/90)
+
+    new_pattern = pattern*10
+
+    for i in range(0,rotations):
+        new_pattern = np.rot90(new_pattern, k=-1)
+
+        for x in np.nditer(new_pattern, op_flags = ['readwrite']):
+            if x % 10 == 4:
+                x[...] = x-3
+            elif x % 10 == 0:
+                x[...]
+            else:
+                x[...] = x+1
+    
+    return new_pattern/10
+
+
+
+"""
 The aim of this function is to set the tile colours
 colour_mode = 'alternating'
 colour_mode = 'sequence'
 colour_mode = 'random'
 colour_mode = 'pass'
 """ 
-def Colour_Pattern(tile_pattern,palette,colour_mode):
+def Colour_Pattern(tile_pattern,palette,colour_mode,tiles_check=True):
     colour_seed = 1
     palette_position = 0
     # iterate over tesselations
@@ -255,34 +291,35 @@ def Colour_Pattern(tile_pattern,palette,colour_mode):
         # skip if number not found
         if ~np.any(tile_pattern[8][1]==i):
             continue
-        #i=1
+        
         location = np.where(tile_pattern[8][1]==i)
         # skip if no tile required
         if np.all(np.isnan(tile_pattern[8][0][location])):
             continue
-        shapes_required = np.floor(tile_pattern[8][0][location])
-        # list of available colours in that shape
-        available_palette = current_palette[np.in1d(current_palette[:,1],shapes_required)]
-        available_palette = available_palette[available_palette[:][:,2]>0]
-
-        if len(available_palette[:][:,0]) == 0:
-            print('No more tiles of shape {} available'.format(shapes_required))
+        if tiles_check:
+            shapes_required = np.floor(tile_pattern[8][0][location])
+            # list of available colours in that shape
+            available_palette = current_palette[np.in1d(current_palette[:,1],shapes_required)]
+            available_palette = available_palette[available_palette[:][:,2]>0]
+        else:
+            available_palette = current_palette
+            
+            if len(available_palette[:][:,0]) == 0:
+                print('No more tiles of shape {} available'.format(shapes_required))
         
         if len(location[0]>0):
             for j in range(0,len(location[0])):
-                # shapes_required = np.floor(tile_pattern[8][0][location])
-                # # list of available colours in that shape
-                # available_palette = current_palette[np.in1d(current_palette[:,1],shapes_required)]
-                # available_palette = available_palette[available_palette[:][:,2]>0]
 
-                #change colour if not available       
-                if  ~np.any(available_palette[:][:,0] == colour_seed):
-                    #print('all gone')
-                    colour_seed = available_palette[0,0]
+                if tiles_check:
+                    #change colour if not available       
+                    if  ~np.any(available_palette[:][:,0] == colour_seed):
+                        print('all gone')
+                        colour_seed = available_palette[0,0]
                 
                 if tile_pattern[8][0][location[0][j]][location[1][j]] >0:
                     tile_pattern[8][2][location[0][j]][location[1][j]] = colour_seed
-                    
+                
+                if tiles_check:
                     # update inventory (colour, shape)
                     current_shape = shapes_required[j]
                     chosen_tile = np.where((current_palette[:, :-1] == (colour_seed, current_shape)).all(axis=1))
@@ -342,6 +379,8 @@ def Plot_Pattern(colour_pattern):
     
     try:
         import seaborn as sb
+        import matplotlib.pyplot as plt
+        plt.figure()
         sb.heatmap(colours_used,annot=legend, fmt = '', cmap="Pastel2_r")    
     except:
         print(colour_pattern[8])
@@ -351,25 +390,25 @@ cutout=np.array([3,3,4,4])
 translation = [1,1]
 
 ## Knots and Dots Frame ## 
-canvas = Canvas(x,y,colour,border,cutout)  
+# canvas = Canvas(x,y,colour,border,cutout)  
 
-tile_pattern = Tile_Pattern(canvas,[0,0],pattern["knot"],translation,fill=False,wrap=False)
+# tile_pattern = Tile_Pattern(canvas,[0,0],pattern["knot"],translation,fill=False,wrap=False)
 
-tile_pattern = Tile_Pattern(canvas,[3,0],pattern["knot"],translation,fill=False,wrap=True,tile_ID=tile_pattern[9])
+# tile_pattern = Tile_Pattern(canvas,[3,0],pattern["knot"],translation,fill=False,wrap=True,tile_ID=tile_pattern[9])
 
-tile_pattern = Tile_Pattern(canvas,[5,0],pattern["knot"],translation,fill=False,wrap=True,tile_ID=tile_pattern[9])
+# tile_pattern = Tile_Pattern(canvas,[5,0],pattern["knot"],translation,fill=False,wrap=True,tile_ID=tile_pattern[9])
 
-tile_pattern = Tile_Pattern(canvas,[2,0],pattern["dot"],translation,fill=False,wrap=False,tile_ID=tile_pattern[9])
+# tile_pattern = Tile_Pattern(canvas,[2,0],pattern["dot"],translation,fill=False,wrap=False,tile_ID=tile_pattern[9])
 
-tile_pattern = Tile_Pattern(canvas,[0,1],pattern["dot"],translation,fill=False,wrap=False,tile_ID=tile_pattern[9])
+# tile_pattern = Tile_Pattern(canvas,[0,1],pattern["dot"],translation,fill=False,wrap=False,tile_ID=tile_pattern[9])
 
-tile_pattern = Tile_Pattern(canvas,[7,0],pattern["knot"],translation,fill=False,wrap=True,tile_ID=tile_pattern[9])
+# tile_pattern = Tile_Pattern(canvas,[7,0],pattern["knot"],translation,fill=False,wrap=True,tile_ID=tile_pattern[9])
 
-tile_pattern = Tile_Pattern(canvas,[-1,6],pattern["knot"],translation,fill=False,wrap=True,tile_ID=tile_pattern[9])
+# tile_pattern = Tile_Pattern(canvas,[-1,6],pattern["knot"],translation,fill=False,wrap=True,tile_ID=tile_pattern[9])
 
-colour_pattern = Colour_Pattern(tile_pattern,palette,colour_mode = 'pass')
-count_tiles = Count_Tiles(colour_pattern,palette)
-Plot_Pattern(colour_pattern)
+# colour_pattern = Colour_Pattern(tile_pattern,palette,colour_mode = 'pass')
+# count_tiles = Count_Tiles(colour_pattern,palette)
+# Plot_Pattern(colour_pattern)
 
 ## Knots Frame ## 
 # canvas = Canvas(x,y,colour,border,cutout) 
@@ -381,9 +420,19 @@ Plot_Pattern(colour_pattern)
 
 ## Circles Frame ##
 # canvas = Canvas(x,y,colour,border,cutout) 
-# tile_pattern = Tile_Pattern(canvas,[0,0],pattern["circle"],translation=[2,2],fill=True,wrap=True)
+# tile_pattern = Tile_Pattern(canvas,[0,0],pattern["fish"],translation=[2,2],fill=True,wrap=True,rotate=90)
 
 # reduced_palette = palette[np.where(palette[:,1]==3)]
-# colour_pattern = Colour_Pattern(tile_pattern,reduced_palette,colour_mode = 'random')
+# colour_pattern = Colour_Pattern(tile_pattern,reduced_palette,colour_mode = 'random',tiles_check=False)
 # count_tiles = Count_Tiles(colour_pattern,reduced_palette)
 # Plot_Pattern(colour_pattern)
+
+## auto Loop over designs ##
+for i in pattern:
+    translation = [pattern[i].shape[0],pattern[i].shape[1]]
+    colour_mode = colour_modes[np.random.randint(0,3)]
+    canvas = Canvas(x,y,colour,border,cutout) 
+    tile_pattern = Tile_Pattern(canvas,[0,0],pattern[i],translation,fill=True,wrap=True,rotate=0)
+    tile_pattern[8][2] = tile_pattern[8][0]
+    colour_pattern = Colour_Pattern(tile_pattern,palette,colour_mode, tiles_check=False)
+    Plot_Pattern(tile_pattern)
