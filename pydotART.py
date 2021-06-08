@@ -10,17 +10,25 @@ import numpy as np
 ## tile dictionary ##
 tile_dict = {0:" ",
              1:"■",
+             1.1:"◆",
+             1.3:"◆",
+             1.5:"◆",
+             1.7:"◆",
         2:"○",
         3:"◔",
-        3.1:"◢",
-        3.2:"◣",
-        3.3:"◸",
-        3.4:"◹",
+        3.1:"▸",
+        3.2:"◢",
+        3.3:"▽",
+        3.4:"◣",
+        3.5:"◂",
+        3.6:"◸",
+        3.7:"△",
+        3.8:"◹",
         4:"◖",
-        4.1:"C",
-        4.2:"∩",
-        4.3:"D",
-        4.4:"U",
+        4.2:"C",
+        4.4:"∩",
+        4.6:"D",
+        4.8:"U",
         5:"☆",
         6:"♡",
         7:"🧀",
@@ -30,41 +38,45 @@ tile_dict = {0:" ",
 ## pre-programmed patterns based on DOTS packaging##
 pattern = {
    "dot" : np.array([[2]]),
+   
+   "quarter" : np.array([[3.2]]),
+   
+   "scale" : np.array([[3.7, 0]]),
 
-"knot" : np.array([[3.2],
-                 [3.4]]),
+"leaf" : np.array([[3.4],
+                 [3.8]]),
 
-"left_circle" : np.array([[3.1],
-                        [3.4]]),
+"left_circle" : np.array([[3.2],
+                        [3.8]]),
 
-"right_circle" : np.array([[3.2],
-                         [3.3]]),
+"right_circle" : np.array([[3.4],
+                         [3.6]]),
 
-"circle" : np.array([[3.1,3.2],
-                        [3.4,3.3]
+"circle" : np.array([[3.2,3.4],
+                        [3.8,3.6]
                         ]),
-"windmill" : np.array([[3.4,3.1],
-                        [3.3,3.2]
+"windmill" : np.array([[3.8,3.2],
+                        [3.6,3.4]
                         ]),
 
-"fish" : np.array([[3.1,3.2],
-                        [3.3,3.4]
+"fish" : np.array([[3.2,3.4],
+                        [3.6,3.8]
                         ]),
 
-"butterfly" : np.array([[3.2,3.1],
-                        [3.3,3.4]
+"butterfly" : np.array([[3.4,3.2],
+                        [3.6,3.8]
                         ]) ,
 
 "shield" : np.array([[1,1],
-                        [3.4,3.3]
+                        [3.8,3.6]
                         ])  ,
 
-"leaf" : np.array([[3.1,1],
-                        [1,3.3]
+"large_leaf" : np.array([[3.2,1],
+                        [1,3.6]
                         ]) 
     }
 
-colour_modes = ['alternating', 'sequence', 'random', 'pass']
+colour_modes = ['alternating', 'sequence', 'random', 'pass', 'deplete']
 
 ### Configuration ###
 # What tiles are avaiable [Colour,Shape,Amount]
@@ -144,7 +156,7 @@ def Tile_Check(canvas,canvas_seed,palette,pattern,translation):
 """
 The aim of this function is to place the tiles for one pass across the canvas
 """
-def Pattern(canvas,starting_x,starting_y,pattern,translation,tile_ID,wrap=True,rotate=-1):
+def Pattern(canvas,starting_x,starting_y,pattern,translation,tile_ID,wrap=True,rotate=0):
 
     x = canvas[0]
     y = canvas[1]
@@ -220,7 +232,7 @@ def Pattern(canvas,starting_x,starting_y,pattern,translation,tile_ID,wrap=True,r
 The aim of this function is to control the tiling passes across the canvas and
 return the output pattern
 """ 
-def Tile_Pattern(canvas,canvas_seed,pattern,translation,fill=True,wrap=True,rotate=-1,tile_ID = 1):
+def Tile_Pattern(canvas,canvas_seed,pattern,translation,fill=True,wrap=True,rotate=0,tile_ID = 1):
     offset_x = canvas_seed[0]
     offset_y = canvas_seed[1]
     tesselation = np.floor(pattern)
@@ -249,9 +261,67 @@ def Tile_Pattern(canvas,canvas_seed,pattern,translation,fill=True,wrap=True,rota
 The aim of this function is to control the tiling passes across the canvas and
 return the output pattern
 """ 
+def Spiral_Pattern(canvas,canvas_seed,pattern,direction=1,rotate=0,tile_ID = 1):
+
+    width_x = len(pattern[:,0])
+    width_y = len(pattern[0,:])
+
+    x = canvas[0]
+    y = canvas[1]
+    offset_x = canvas_seed[0]
+    offset_y = canvas_seed[1]
+
+    extent_x = round(x/len(pattern[:,0]))
+    extent_y = round(y/len(pattern[0,:]))
+
+    current_xy = [offset_x,offset_x]
+            
+    for i in range(0,extent_x*extent_y):
+
+        print(current_xy)    
+
+        result = Pattern(canvas,current_xy[0],current_xy[1],pattern,[0,0],tile_ID,False,rotate)
+        canvas[8][0] = result[0].copy()
+        canvas[8][1] = result[1].copy()
+        tile_ID = result[2]           
+
+        if current_xy[0] < x-width_x and current_xy[1] == offset_y:
+            current_xy[0] += width_x
+        elif current_xy[0] == x-width_x  and current_xy[1] < y-width_y: 
+            current_xy[0] = x-width_x       
+            current_xy[1] += width_y
+        elif current_xy[1] == y-width_y  and current_xy[0] > offset_x:
+            current_xy[0] -= width_x       
+            current_xy[1] = y-width_y   
+        elif current_xy[0] == offset_x  and current_xy[1] > offset_y+width_y:
+            current_xy[0] = offset_x       
+            current_xy[1] -= width_y           
+        elif current_xy[0] == offset_x and current_xy[1] == offset_y+width_y:
+            x = x - width_x
+            y = y - width_y
+            offset_x = offset_x + width_x
+            offset_y = offset_y + width_y
+            extent_x = round(x/len(pattern[:,0]))-2
+            extent_y = round(y/len(pattern[0,:]))-2    
+            current_xy[0] = offset_x       
+            current_xy[1] = offset_y   
+
+   
+
+    canvas[9] =  tile_ID  
+    return canvas
+
+
+"""
+The aim of this function is to control the tiling passes across the canvas and
+return the output pattern
+""" 
 def Rotate_Pattern(pattern, angle=0):
     
     if angle == 0:
+        return pattern
+    
+    if abs(angle) >= 360:
         rotations = np.random.randint(1,4)
     else:
         rotations = int(angle/90)
@@ -262,12 +332,12 @@ def Rotate_Pattern(pattern, angle=0):
         new_pattern = np.rot90(new_pattern, k=-1)
 
         for x in np.nditer(new_pattern, op_flags = ['readwrite']):
-            if x % 10 == 4:
-                x[...] = x-3
+            if x % 10 == 8:
+                x[...] = x-6
             elif x % 10 == 0:
                 x[...]
             else:
-                x[...] = x+1
+                x[...] = x+2
     
     return new_pattern/10
 
@@ -345,6 +415,9 @@ def Colour_Pattern(tile_pattern,palette,colour_mode,tiles_check=True):
             if palette_position > len(available_palette[:,0])-1:
                 palette_position = 0
             colour_seed = available_palette[palette_position,0]
+        #use up palette in turn
+        elif colour_mode == 'deplete': # and ~np.any(tile_pattern[8][1]==i+1):
+            colour_seed = available_palette[0,0]
 
     
     return tile_pattern
@@ -374,9 +447,13 @@ def Plot_Pattern(colour_pattern):
     colours_used = np.where(colour_pattern[8][2]==0,np.NaN,colour_pattern[8][2])
     # replace the numbers for the tile orientation with symbols
     legend = colour_pattern[8][0].copy().tolist()
-    for i in range(0, len(legend[:][0])):
-        legend[i] = [tile_dict.get(j, j) for j in legend[i]]
-    
+    shape = colour_pattern[8][0].shape
+
+    for i in range(0, shape[0]):
+        for j in range(0, shape[1]):
+            if ~np.isnan(legend[i][j]):
+                legend[i][j] = tile_dict[legend[i][j]]
+
     try:
         import seaborn as sb
         import matplotlib.pyplot as plt
@@ -392,19 +469,19 @@ translation = [1,1]
 ## Knots and Dots Frame ## 
 # canvas = Canvas(x,y,colour,border,cutout)  
 
-# tile_pattern = Tile_Pattern(canvas,[0,0],pattern["knot"],translation,fill=False,wrap=False)
+# tile_pattern = Tile_Pattern(canvas,[0,0],pattern["leaf"],translation,fill=False,wrap=False)
 
-# tile_pattern = Tile_Pattern(canvas,[3,0],pattern["knot"],translation,fill=False,wrap=True,tile_ID=tile_pattern[9])
+# tile_pattern = Tile_Pattern(canvas,[3,0],pattern["leaf"],translation,fill=False,wrap=True,tile_ID=tile_pattern[9])
 
-# tile_pattern = Tile_Pattern(canvas,[5,0],pattern["knot"],translation,fill=False,wrap=True,tile_ID=tile_pattern[9])
+# tile_pattern = Tile_Pattern(canvas,[5,0],pattern["leaf"],translation,fill=False,wrap=True,tile_ID=tile_pattern[9])
 
 # tile_pattern = Tile_Pattern(canvas,[2,0],pattern["dot"],translation,fill=False,wrap=False,tile_ID=tile_pattern[9])
 
 # tile_pattern = Tile_Pattern(canvas,[0,1],pattern["dot"],translation,fill=False,wrap=False,tile_ID=tile_pattern[9])
 
-# tile_pattern = Tile_Pattern(canvas,[7,0],pattern["knot"],translation,fill=False,wrap=True,tile_ID=tile_pattern[9])
+# tile_pattern = Tile_Pattern(canvas,[7,0],pattern["leaf"],translation,fill=False,wrap=True,tile_ID=tile_pattern[9])
 
-# tile_pattern = Tile_Pattern(canvas,[-1,6],pattern["knot"],translation,fill=False,wrap=True,tile_ID=tile_pattern[9])
+# tile_pattern = Tile_Pattern(canvas,[-1,6],pattern["leaf"],translation,fill=False,wrap=True,tile_ID=tile_pattern[9])
 
 # colour_pattern = Colour_Pattern(tile_pattern,palette,colour_mode = 'pass')
 # count_tiles = Count_Tiles(colour_pattern,palette)
@@ -412,7 +489,7 @@ translation = [1,1]
 
 ## Knots Frame ## 
 # canvas = Canvas(x,y,colour,border,cutout) 
-# tile_pattern = Tile_Pattern(canvas,[0,0],pattern["knot"],translation,fill=True,wrap=True)
+# tile_pattern = Tile_Pattern(canvas,[0,0],pattern["leaf"],translation,fill=True,wrap=True)
 
 # colour_pattern = Colour_Pattern(tile_pattern,palette,colour_mode = 'pass')
 # count_tiles = Count_Tiles(colour_pattern,palette)
@@ -420,10 +497,10 @@ translation = [1,1]
 
 ## Circles Frame ##
 # canvas = Canvas(x,y,colour,border,cutout) 
-# tile_pattern = Tile_Pattern(canvas,[0,0],pattern["fish"],translation=[2,2],fill=True,wrap=True,rotate=90)
+# tile_pattern = Spiral_Pattern(canvas,[0,0],pattern["circle"],rotate=0)
 
 # reduced_palette = palette[np.where(palette[:,1]==3)]
-# colour_pattern = Colour_Pattern(tile_pattern,reduced_palette,colour_mode = 'random',tiles_check=False)
+# colour_pattern = Colour_Pattern(tile_pattern,reduced_palette,colour_mode = 'sequence',tiles_check=True)
 # count_tiles = Count_Tiles(colour_pattern,reduced_palette)
 # Plot_Pattern(colour_pattern)
 
