@@ -6,6 +6,7 @@ Created on Wed May 26 19:49:15 2021
 """
 
 import numpy as np
+from datetime import datetime
 
 ## tile dictionary ##
 tile_dict = {0:" ",
@@ -29,11 +30,79 @@ tile_dict = {0:" ",
         4.4:"∩",
         4.6:"D",
         4.8:"U",
-        5:"☆",
-        6:"♡",
         7:"🧀",
+        7.2:">",
+        7.4:"v",
+        7.6:"<",
+        7.8:"^",
         8:"🎩",
-        9:"🧁"}
+        8.2:"[",
+        8.4:"]",
+        9:"⼧",
+        9.2:"{",
+        9.4:"}",
+        10:"X",
+        11:"▣",
+        12:"◎",
+        13:"⚘",
+        14:"⁕",
+        15:"🧁",
+        16:"☆",
+        17:"♡"}
+
+ldraw_dict = {-1:"1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 1.000000 3811.dat",
+             1:"1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 1.000000 3070b.dat",
+             1.1:"◆",
+             1.3:"◆",
+             1.5:"◆",
+             1.7:"◆",
+        2:"1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 1.000000 98138.dat",
+        3:"◔",
+        3.1:"-0.766045 0.000000 0.642787 0.000000 1.000000 0.000000 -0.642787 0.000000 -0.766045 25269.dat",
+        3.2:"-1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 -1.000000 25269.dat",
+        3.3:"-0.707107 0.000000 -0.707107 0.000000 1.000000 0.000000 0.707107 0.000000 -0.707107 25269.dat",
+        3.8:"0.000000 0.000000 -1.000000 0.000000 1.000000 0.000000 1.000000 0.000000 0.000000 25269.dat",
+        3.5:"0.707107 0.000000 -0.707107 0.000000 1.000000 0.000000 0.707107 0.000000 0.707107 25269.dat",
+        3.6:"1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 1.000000 25269.dat",
+        3.7:"0.707104 0.000000 0.707110 0.000000 1.000000 0.000000 -0.707110 0.000000 0.707104 25269.dat",
+        3.4:"0.000000 0.000000 1.000000 0.000000 1.000000 0.000000 -1.000000 0.000000 0.000000 25269.dat",
+        4:"◖",
+        4.2:"0.000000 0.000000 1.000000 0.000000 1.000000 0.000000 -1.000000 0.000000 0.000000 24246.dat",
+        4.4:"-1.000000 0.000000 -0.000001 0.000000 1.000000 0.000000 0.000001 0.000000 -1.000000 24246.dat",
+        4.6:"0.000001 0.000000 -1.000000 0.000000 1.000000 0.000000 1.000000 0.000000 0.000001 24246.dat",
+        4.8:"1.000000 0.000000 0.000001 0.000000 1.000000 0.000000 -0.000001 0.000000 1.000000 24246.dat",
+        7:"🧀",
+        7.2:"0.000000 0.000000 -1.000000 0.000000 1.000000 0.000000 1.000000 0.000000 0.000000 54200.dat",
+        7.4:"1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 1.000000 54200.dat",
+        7.6:"0.000000 0.000000 1.000000 0.000000 1.000000 0.000000 -1.000000 0.000000 0.000000 54200.dat",
+        7.8:"-1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 -1.000000 54200.dat",
+        8:"🎩",
+        8.2:"1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 1.000000 49307.dat",
+        8.4:"0.000000 0.000000 1.000000 0.000000 1.000000 0.000000 -1.000000 0.000000 0.000000 49307.dat",
+        9:"⼧",
+        9.2:"1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 1.000000 35464.dat",
+        9.4:"0.000000 0.000000 1.000000 0.000000 1.000000 0.000000 -1.000000 0.000000 0.000000 35464.dat",
+        10:"1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 1.000000 22388.dat",
+        11:"1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 1.000000 3024.dat",
+        12:"1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 1.000000 6141.dat",
+        13:"0.707107 0.000000 0.707107 0.000000 1.000000 0.000000 -0.707107 0.000000 0.707107 33291.dat",
+        14:"1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 1.000000 24866.dat",
+        15:"1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 1.000000 53119.dat",
+        16:"1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 1.000000 11609.dat",
+        17:"1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 1.000000 39739.dat"   
+    }
+
+ldraw_header = "0 Untitled Model\n0 Name:  dots palette\n0 Author:  \n0 CustomBrick\n0 NumOfBricks:  "
+
+"""
+1 <colour> x y z a b c d e f g h i <file>
+<colour> is a number representing the colour of the part.
+x y z is the x y z coordinate of the part
+-1, 7, 9, 16 y is 0.000000 else -8.000000 -Y is height
+20 studs is 1x1
+a b c d e f g h i represents the rotation and scaling of the part.
+"""
+
 
 ## pre-programmed patterns based on DOTS packaging##
 pattern = {
@@ -41,7 +110,7 @@ pattern = {
    
    "quarter" : np.array([[3.2]]),
    
-   "scale" : np.array([[3.7, 0]]),
+   "scale" : np.array([[3.7]]),
 
 "leaf" : np.array([[3.4],
                  [3.8]]),
@@ -59,7 +128,7 @@ pattern = {
                         [3.6,3.4]
                         ]),
 
-"fish" : np.array([[3.2,3.4],
+"tulip" : np.array([[3.2,3.4],
                         [3.6,3.8]
                         ]),
 
@@ -80,11 +149,11 @@ colour_modes = ['alternating', 'sequence', 'random', 'pass', 'deplete']
 
 ### Configuration ###
 # What tiles are avaiable [Colour,Shape,Amount]
-palette = np.array([[1,3.,16],
-                    [2,3.,16],
-                    [3,3.,16],
-                    [4,2.,8],
-                    [5,2.,4],
+palette = np.array([[2,3.,16],
+                    [4,3.,16],
+                    [14,3.,16],
+                    [15,2.,8],
+                    [85,2.,4],
                     ])
 
 # Canvas Size and Colour
@@ -206,6 +275,9 @@ def Pattern(canvas,starting_x,starting_y,pattern,translation,tile_ID,wrap=True,r
                 except:
                     print([i,j,k,current_x+j,current_y+k,tesselation[j][k]])
         tile_ID += 1
+        if translation[0] ==0 and translation[1] == 0:
+            break
+
         current_x += translation[0]           
         current_y += translation[1]
         #stop at edge of canvas
@@ -268,6 +340,13 @@ def Spiral_Pattern(canvas,canvas_seed,pattern,direction=1,rotate=0,tile_ID = 1):
 
     x = canvas[0]
     y = canvas[1]
+
+    # x and y must be even numbers or the code stops working
+    if x % 2  == 1:
+        x = x-1
+    if y % 2  == 1:
+        y = y-1
+
     offset_x = canvas_seed[0]
     offset_y = canvas_seed[1]
 
@@ -416,7 +495,7 @@ def Colour_Pattern(tile_pattern,palette,colour_mode,tiles_check=True):
                 palette_position = 0
             colour_seed = available_palette[palette_position,0]
         #use up palette in turn
-        elif colour_mode == 'deplete': # and ~np.any(tile_pattern[8][1]==i+1):
+        elif colour_mode == 'deplete':
             colour_seed = available_palette[0,0]
 
     
@@ -457,10 +536,40 @@ def Plot_Pattern(colour_pattern):
     try:
         import seaborn as sb
         import matplotlib.pyplot as plt
-        plt.figure()
+        fig = plt.figure()
+        fig.set_size_inches(shape)
         sb.heatmap(colours_used,annot=legend, fmt = '', cmap="Pastel2_r")    
     except:
         print(colour_pattern[8])
+
+
+"""
+The aim of this function is to display the final result along with the tile orientation
+""" 
+def Ldraw_Pattern(colour_pattern,filename=datetime.now().strftime('%A %d%m%Y %H%M%S')):
+    output_string = ldraw_header
+
+    colours_used = np.where(colour_pattern[8][2]==0,np.NaN,colour_pattern[8][2])
+    # replace the numbers for the tile orientation with symbols
+    legend = colour_pattern[8][0].copy().tolist()
+    shape = colour_pattern[8][0].shape
+    number_tiles = len(np.where(colour_pattern[8][0]>0)[0])
+
+    output_string = output_string + str(number_tiles)
+    
+    lines = [output_string]
+
+    for i in range(0, shape[0]):
+        for j in range(0, shape[1]):
+            if ~np.isnan(legend[i][j]) and ~np.isnan(colours_used[i][j]):
+                string = "1 " + str(int(colours_used[i][j])) + " " + str(i*20) + ".000000 -8.000000 " + str(j*-20) + ".000000 " + ldraw_dict[legend[i][j]]
+                lines.append(string) 
+
+    # open a file in write mode
+    with open("pydotART "+filename+".ldr", 'w',encoding='utf8') as f:
+        for line in lines:
+            f.write(line)
+            f.write('\n')
 
 ### Run Program ###
 cutout=np.array([3,3,4,4])
@@ -503,13 +612,33 @@ translation = [1,1]
 # colour_pattern = Colour_Pattern(tile_pattern,reduced_palette,colour_mode = 'sequence',tiles_check=True)
 # count_tiles = Count_Tiles(colour_pattern,reduced_palette)
 # Plot_Pattern(colour_pattern)
+# Ldraw_Pattern(colour_pattern)
+
+## Scales Frame ##
+# canvas = Canvas(x,y,colour,border,cutout) 
+# for i in range(0,canvas[0]):
+    
+#     if i ==0:
+#         tile_ID=1
+    
+#     if i % 2 == 0:
+#         canvas_seed = [i,0]
+#     else:        
+#         canvas_seed = [i,1]
+#     tile_pattern = Tile_Pattern(canvas,canvas_seed,pattern["scale"],translation=[0,2],fill=False,wrap=False,rotate=0,tile_ID=tile_ID)
+#     tile_ID=tile_pattern[9]
+
+# reduced_palette = palette[np.where(palette[:,1]==3)]
+# colour_pattern = Colour_Pattern(tile_pattern,reduced_palette,colour_mode = 'pass',tiles_check=True)
+# count_tiles = Count_Tiles(colour_pattern,reduced_palette)
+# Plot_Pattern(colour_pattern)
 
 ## auto Loop over designs ##
-for i in pattern:
-    translation = [pattern[i].shape[0],pattern[i].shape[1]]
-    colour_mode = colour_modes[np.random.randint(0,3)]
-    canvas = Canvas(x,y,colour,border,cutout) 
-    tile_pattern = Tile_Pattern(canvas,[0,0],pattern[i],translation,fill=True,wrap=True,rotate=0)
-    tile_pattern[8][2] = tile_pattern[8][0]
-    colour_pattern = Colour_Pattern(tile_pattern,palette,colour_mode, tiles_check=False)
-    Plot_Pattern(tile_pattern)
+# for i in pattern:
+#     translation = [pattern[i].shape[0],pattern[i].shape[1]]
+#     colour_mode = colour_modes[np.random.randint(0,3)]
+#     canvas = Canvas(x,y,colour,border,cutout) 
+#     tile_pattern = Tile_Pattern(canvas,[0,0],pattern[i],translation,fill=True,wrap=True,rotate=0)
+#     tile_pattern[8][2] = tile_pattern[8][0]
+#     colour_pattern = Colour_Pattern(tile_pattern,palette,colour_mode, tiles_check=False)
+#     Plot_Pattern(tile_pattern)
