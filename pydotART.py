@@ -330,6 +330,139 @@ def Tile_Pattern(canvas,canvas_seed,pattern,translation,fill=True,wrap=True,rota
     return canvas
 
 """
+The aim of this function is to mirror the pattern on the canvas and
+return the output pattern
+translation=["X","Y","yx","y-x"]
+translation=["X","Y"]
+translation=["X"]
+translation=["yx","y-x"]
+translation=["yx"]
+translation=["y-x"]
+translation=["X","y-x"]
+pattern= pattern["tulip"]
+""" 
+def Mirror_Pattern(canvas,canvas_seed,pattern,translation,rotate=0,tile_ID = 1):
+    number_planes = len(translation)
+    
+    x = canvas[0]
+    y= canvas[1]
+
+    working_canvas = np.zeros((3,x,y)).astype('float')
+    mask = working_canvas[0].copy()
+    index = working_canvas[0].copy()
+    
+    count = 1
+    for i in np.nditer(index, op_flags=['readwrite']):
+        i[...] = count
+        count+=1
+        
+    
+    # fill mask with NaN
+    for i in range (0, number_planes):
+        if translation[i] == "X":
+            for j in range(0,x):
+                if j >= np.floor(x/2):
+                    mask[:,j]=np.nan
+        elif translation[i] == "Y":
+            for j in range(0,x):
+                if j >= np.floor(x/2):
+                    mask[j,:]=np.nan
+        elif translation[i] == "yx":
+            mask = np.tril(mask-1)
+            mask[mask == 0] = np.nan
+            mask[mask < 0] = 0            
+        elif translation[i] == "y-x":
+            mask2 = np.triu(working_canvas[0]-1)
+            mask2[mask2 == 0] = np.nan
+            mask2[mask2 < 0] = 0
+            mask = mask*np.fliplr(mask2)
+
+    # update index + mask
+    index = index + mask
+    index[np.isnan(index)] = 0 
+    for i in range (0, number_planes):
+        if translation[i] == "X":
+            index += np.fliplr(index)
+        elif translation[i] == "Y":
+            index += np.flipud(index)
+        elif translation[i] == "yx":
+            for j in range(0,x):
+                for k in range (0,y):
+                    if index[k][j] == 0:
+                        index[k][j] = index[j][k]
+        elif translation[i] == "y-x":
+            for j in range(0,x):
+                for k in range (0,y):
+                    if index[y-k-1][x-j-1] == 0:
+                        index[y-k-1][x-j-1] = index[j][k]
+
+    # add pattern
+    result = Pattern(canvas,canvas_seed[0],canvas_seed[1],pattern,[0,0],tile_ID,False,rotate)    
+    # canvas[8][0] = result[0].copy()
+    # canvas[8][1] = result[1].copy()
+    # tile_ID = result[2]   
+    mask[np.isnan(mask)] = -1000
+    result[0] = result[0]+mask
+    result[0][result[0]<0]=0
+    #result[0]
+
+
+
+    # update canvas based on index
+    for i in range( 1,int(np.amax(index))):
+        locations = np.where(index==i)
+        count = len(locations[0])
+        if count>0:
+            tile = np.amax(result[0][locations])
+            if tile > 0: 
+                new_tile = tile*10
+                origin = np.where(canvas[8][0]==tile)   
+                # index also need to know how the tiles should be transformed          
+                for j in range (0,count):
+                    new_x = locations[0][j]
+                    new_y = locations[1][j]
+
+                    if new_x == origin[0] and new_y == origin[1]:
+                        continue
+                    elif new_x == origin[0] and new_y > origin[1]:
+                        if new_tile % 10 == 2:
+                            tile = round((new_tile+2)/10,1)
+                        elif new_tile % 10 == 4:
+                            tile = round((new_tile-2)/10,1)
+                        elif new_tile % 10 == 6:
+                            tile = round((new_tile+2)/10,1)
+                        elif new_tile % 10 == 8:
+                            tile = round((new_tile-2)/10,1)
+                    elif new_x > origin[0] and new_y == origin[1]:
+                        if new_tile % 10 == 2:
+                            tile = round((new_tile+6)/10,1)
+                        elif new_tile % 10 == 4:
+                            tile = round((new_tile+2)/10,1)
+                        elif new_tile % 10 == 6:
+                            tile = round((new_tile-2)/10,1)
+                        elif new_tile % 10 == 8:
+                            tile = round((new_tile-6)/10,1)
+                    if new_x > origin[0] and new_y > origin[1]:
+                        if new_tile % 10 == 2:
+                            tile = round((new_tile+4)/10,1)
+                        elif new_tile % 10 == 4:
+                            tile = round((new_tile+4)/10,1)
+                        elif new_tile % 10 == 6:
+                            tile = round((new_tile-4)/10,1)
+                        elif new_tile % 10 == 8:
+                            tile = round((new_tile-4)/10,1)
+                 
+                    
+                    result[0][locations[0][j]][locations[1][j]] = tile
+                    result[1][locations[0][j]][locations[1][j]] = tile_ID
+
+    canvas[8][0] = result[0].copy()
+    canvas[8][1] = result[1].copy()    
+    canvas[9] =  result[2]  
+    return canvas
+
+
+"""
 The aim of this function is to control the tiling passes across the canvas and
 return the output pattern
 """ 
@@ -430,11 +563,12 @@ colour_mode = 'random'
 colour_mode = 'pass'
 """ 
 def Colour_Pattern(tile_pattern,palette,colour_mode,tiles_check=True):
-    colour_seed = 1
+    #colour_seed = 1
     palette_position = 0
     # iterate over tesselations
     number_tesselations = int(np.max(tile_pattern[8][1]))
     current_palette = palette[palette[:,2]>0]
+    colour_seed = current_palette[0,0]
 
     for i in range (1, number_tesselations+1):
         # skip if number not found
@@ -455,6 +589,9 @@ def Colour_Pattern(tile_pattern,palette,colour_mode,tiles_check=True):
             
             if len(available_palette[:][:,0]) == 0:
                 print('No more tiles of shape {} available'.format(shapes_required))
+        
+        if i == 1:
+            colour_seed = available_palette[0,0]
         
         if len(location[0]>0):
             for j in range(0,len(location[0])):
@@ -642,3 +779,12 @@ translation = [1,1]
 #     tile_pattern[8][2] = tile_pattern[8][0]
 #     colour_pattern = Colour_Pattern(tile_pattern,palette,colour_mode, tiles_check=False)
 #     Plot_Pattern(tile_pattern)
+
+# Mirroring
+canvas = Canvas(x,y,colour,border,cutout)
+tile_pattern = Tile_Pattern(canvas,[0,0],pattern["leaf"],translation,fill=True,wrap=True)
+canvas_seed=[2,2]
+tile_pattern = Mirror_Pattern(tile_pattern,canvas_seed,pattern["tulip"],translation=["X","Y"],rotate=0,tile_ID = 1)
+colour_pattern = Colour_Pattern(tile_pattern,palette,colour_mode = 'pass')
+count_tiles = Count_Tiles(colour_pattern,palette)
+Plot_Pattern(colour_pattern)
