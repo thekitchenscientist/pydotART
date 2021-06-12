@@ -3,12 +3,35 @@
 Created on Wed May 26 19:49:15 2021
 
 @author: Stephen Pearson
+https://github.com/thekitchenscientist/pydotART
+
+This code is designed to produce viable pattens using LEGO® DOTS™. 
+
+You need to supply the area to cover, the available DOTS and a sub-pattern.
+There are different functions available to apply that pattern to the canvas.
+
+Outputs can be a building plan or LDraw digital representation.
+
+Examples builds are shown at 
+https://rebrickable.com/sets/30556-1/mini-frame/?inventory=1#alt_builds
+
+
+Potential future updates besides those mentioned in each function are:
+    save and load canvas
+    apply border to canvas prior to rendering or export
+    add LDraw colour dictionary
+    space invader sprite function
+    morse code pattern generator
+    dna code pattern generator
+    'snakes', 'clouds' and 'cactus' pattern generators
+    fill exposed studs with tile option
+    ipywidget interface    
 """
 
 import numpy as np
 from datetime import datetime
 
-## tile dictionary ##
+## tile dictionaries ##
 tile_dict = {0:" ",
              1:"■",
              1.1:"◆",
@@ -103,9 +126,11 @@ x y z is the x y z coordinate of the part
 a b c d e f g h i represents the rotation and scaling of the part.
 """
 
+## pre-programmed colouring options based on DOTS packaging ##
+colour_modes = ['alternating', 'sequence', 'random', 'pass', 'deplete']
 
-## pre-programmed patterns based on DOTS packaging##
-pattern = {
+## pre-programmed patterns based on DOTS packaging ##
+pattern_dict = {
    "dot" : np.array([[2]]),
    
    "quarter" : np.array([[3.2]]),
@@ -145,50 +170,22 @@ pattern = {
                         ]) 
     }
 
-colour_modes = ['alternating', 'sequence', 'random', 'pass', 'deplete']
-
-### Configuration ###
-# What tiles are avaiable [Colour,Shape,Amount]
-palette = np.array([[2,3.,16],
-                    [4,3.,16],
-                    [14,3.,16],
-                    [15,2.,8],
-                    [85,2.,4],
-                    ])
-
-# Canvas Size and Colour
-x=8
-y=8
-colour=1
-
-# How wide should the untiled border around the edge be?
-border=0
-
-# What is the location and size of a central gap [x,y,x_length, y_length]
-cutout=np.array([0,0,0,0])
-
-# Where should the tiling start from?
-canvas_seed=[0,0]
-
-# Where should the next tile be placed relative to the previous?
-translation=np.array([0,0])
-
-
-
-
 
 ### Functions ###
-"""
-The aim of this function is to encode the configuration, check the combinations
-are viable and create the canvas [tile shapes, tile_ID, tile_colour, tile orientation]
-
-"""
 def Canvas(x,y,colour=1,border=0,cutout=np.array([0,0,0,0])):
+    """Encode the configuration into an array.
+    
+    Return the blank canvas.
+    
+    Do some checks that the combinations are viable (border and cut out leave some studs
+    to tile on). Create the canvas.
+    """
+
     # check border is not too big
     if border > 0 and (x-2*border < 2 or y-2*border < 2):
         print('Border is too large please choose a smaller value')
         return
-    # resize canvas
+    # resize canvas based on border
     x = x - 2 * border
     y = y - 2 * border
     
@@ -200,32 +197,34 @@ def Canvas(x,y,colour=1,border=0,cutout=np.array([0,0,0,0])):
     return([x,y,colour,border,cutout[0]-1,cutout[1]-1,cutout[2],cutout[3],np.zeros((3,x,y)),0])
     
 
-"""
-The aim of this function is to check their are enough tiles
-"""
+
 def Tile_Check(canvas,canvas_seed,palette,pattern,translation):
-    
+    """A basic check their are enough tiles to cover the canvas
+    """    
     
     tesselation = np.floor(pattern)
     # count the available tiles
     tiles = palette[:,2].sum()
     # count the available studs
     studs = canvas[0]*canvas[1] - canvas[6]*canvas[7]
-    # if tiles > studs:
-    #     return
+
     tiles_percent = len(np.where(tesselation>0)[0])/tesselation.size
     if tiles*tiles_percent < studs:
         print('Not enough tiles to cover canvas')
-    # check next by group and update palette if tiles not used
-    # shapes_required = np.unique(tesselation)
-    # update_to_palette = np.where(np.in1d(palette[:,1],shapes_required))
-    # palette = palette[update_to_palette,:][0]
-    # return palette
 
-"""
-The aim of this function is to place the tiles for one pass across the canvas
-"""
+
+
 def Pattern(canvas,starting_x,starting_y,pattern,translation,tile_ID,wrap=True,rotate=0):
+    """Place the tiles for one pass across the canvas.
+    
+    Return the canvas with the patterns applied.
+    
+    The pattern is applied across the canvas using the translation. If a stud already has a tile
+    on that part of the pattern will not be placed. THe tile ID is needed so that the colouring
+    function has the order the patterns were laid in.
+    If wrap is True the the pattern will continue on the top of the canvas if it partly crosses the bottom.
+    Rotation currently only works for square patterns.
+    """
 
     x = canvas[0]
     y = canvas[1]
@@ -300,11 +299,15 @@ def Pattern(canvas,starting_x,starting_y,pattern,translation,tile_ID,wrap=True,r
 
     return([output_solution,current_positions,tile_ID])
 
-"""
-The aim of this function is to control the tiling passes across the canvas and
-return the output pattern
-""" 
+
+
 def Tile_Pattern(canvas,canvas_seed,pattern,translation,fill=True,wrap=True,rotate=0,tile_ID = 1):
+    """Apply the pattern across the canvas as specified.
+    
+    Return the canvas with the patterns applied.
+    
+    Starting from the seed location
+    """ 
     offset_x = canvas_seed[0]
     offset_y = canvas_seed[1]
     tesselation = np.floor(pattern)
@@ -329,19 +332,20 @@ def Tile_Pattern(canvas,canvas_seed,pattern,translation,fill=True,wrap=True,rota
     canvas[9] =  tile_ID  
     return canvas
 
-"""
-The aim of this function is to mirror the pattern on the canvas and
-return the output pattern
-mode=["X","Y","yx","y-x"]
-mode=["X","Y"]
-mode=["X"]
-mode=["yx","y-x"]
-mode=["yx"]
-mode=["y-x"]
-mode=["X","y-x"]
-pattern= pattern["tulip"]
-""" 
+
+
 def Mirror_Pattern(canvas,mode):
+    """Mirror the pattern on the canvas
+    
+    Return the output pattern after applying the mirror planes to the canvas.    
+    mode=["X","Y","y=x","y=-x"]
+    After placing the mirror planes (X, Y, y=x or y=-x) a mask is applied to all but the
+    left (and/or upper side). The array is then indexed to the patterns can be translated correctly.
+    Finally the tiles are rotated based on how they were mirrored to maintain the correct patterns.
+    
+    A future update would allow the modes "y=x" and "y=-x" to rotate the tiles correctly.
+    """ 
+
     number_planes = len(mode)
     
     x = canvas[0]
@@ -351,12 +355,12 @@ def Mirror_Pattern(canvas,mode):
     mask = working_canvas[0].copy()
     index = working_canvas[0].copy()
     
+    # index canvas
     count = 1
     for i in np.nditer(index, op_flags=['readwrite']):
         i[...] = count
         count+=1
-        
-    
+            
     # fill mask with NaN
     for i in range (0, number_planes):
         if mode[i] == "X":
@@ -367,11 +371,11 @@ def Mirror_Pattern(canvas,mode):
             for j in range(0,x):
                 if j >= np.floor(x/2):
                     mask[j,:]=np.nan
-        elif mode[i] == "yx":
+        elif mode[i] == "y=x":
             mask = np.tril(mask-1)
             mask[mask == 0] = np.nan
             mask[mask < 0] = 0            
-        elif mode[i] == "y-x":
+        elif mode[i] == "y=-x":
             mask2 = np.triu(working_canvas[0]-1)
             mask2[mask2 == 0] = np.nan
             mask2[mask2 < 0] = 0
@@ -385,12 +389,12 @@ def Mirror_Pattern(canvas,mode):
             index += np.fliplr(index)
         elif mode[i] == "Y":
             index += np.flipud(index)
-        elif mode[i] == "yx":
+        elif mode[i] == "y=x":
             for j in range(0,x):
                 for k in range (0,y):
                     if index[k][j] == 0:
                         index[k][j] = index[j][k]
-        elif mode[i] == "y-x":
+        elif mode[i] == "y=-x":
             for j in range(0,x):
                 for k in range (0,y):
                     if index[y-k-1][x-j-1] == 0:
@@ -402,7 +406,6 @@ def Mirror_Pattern(canvas,mode):
     working_canvas[0] = working_canvas[0]+mask
     working_canvas[0][working_canvas[0]<0]=0
     working_canvas[0]
-
 
     # update canvas based on index
     for i in range( 1,int(np.amax(index))):
@@ -460,12 +463,14 @@ def Mirror_Pattern(canvas,mode):
     return canvas
 
 
-"""
-The aim of this function is to control the tiling passes across the canvas and
-return the output pattern
-""" 
-def Spiral_Pattern(canvas,canvas_seed,pattern,direction=1,rotate=0,tile_ID = 1):
 
+def Spiral_Pattern(canvas,canvas_seed,pattern,direction=1,rotate=0,tile_ID = 1):
+    """Apply the pattern across the canvas working down then around in a spiral.
+    
+    Returns the canvas with the applied tiles.
+    
+    A future update would allow spirals both clockwise and counter-clockwise.
+    """ 
     width_x = len(pattern[:,0])
     width_y = len(pattern[0,:])
 
@@ -488,8 +493,7 @@ def Spiral_Pattern(canvas,canvas_seed,pattern,direction=1,rotate=0,tile_ID = 1):
             
     for i in range(0,extent_x*extent_y):
 
-        print(current_xy)    
-
+        #print(current_xy)    
         result = Pattern(canvas,current_xy[0],current_xy[1],pattern,[0,0],tile_ID,False,rotate)
         canvas[8][0] = result[0].copy()
         canvas[8][1] = result[1].copy()
@@ -516,17 +520,18 @@ def Spiral_Pattern(canvas,canvas_seed,pattern,direction=1,rotate=0,tile_ID = 1):
             current_xy[0] = offset_x       
             current_xy[1] = offset_y   
 
-   
-
     canvas[9] =  tile_ID  
     return canvas
 
 
-"""
-The aim of this function is to control the tiling passes across the canvas and
-return the output pattern
-""" 
+
 def Rotate_Pattern(pattern, angle=0):
+    """Given an input tile orientation, rotate by the angle required.
+    
+    Returns the new tile orientation.
+    
+    A future update would allow rotation both clockwise and counter-clockwise.
+    """  
     
     if angle == 0:
         return pattern
@@ -542,7 +547,7 @@ def Rotate_Pattern(pattern, angle=0):
         new_pattern = np.rot90(new_pattern, k=-1)
 
         for x in np.nditer(new_pattern, op_flags = ['readwrite']):
-            if x % 10 == 8:
+            if x % 10 == 8 or x % 10 == 7:
                 x[...] = x-6
             elif x % 10 == 0:
                 x[...]
@@ -553,15 +558,21 @@ def Rotate_Pattern(pattern, angle=0):
 
 
 
-"""
-The aim of this function is to set the tile colours
-colour_mode = 'alternating'
-colour_mode = 'sequence'
-colour_mode = 'random'
-colour_mode = 'pass'
-""" 
 def Colour_Pattern(tile_pattern,palette,colour_mode,tiles_check=True):
-    #colour_seed = 1
+    """Try to set the tile colours in the pattern.
+    
+    Returns the coloured pattern where each group of tiles that is placed is given the same colour.
+    The palette defines how many tiles of each shape and colour are available.
+    colour_modes available are:
+        'alternating'
+        'sequence'
+        'random' - pick a colour at random from the palette.
+        'pass'
+        'deplete' - use up all the first colour in the palette before working through the next.
+        
+    tiles_check tries to update the palette but this is done after each tesselation, not each tile.
+    """ 
+
     palette_position = 0
     # iterate over tesselations
     number_tesselations = int(np.max(tile_pattern[8][1]))
@@ -597,7 +608,7 @@ def Colour_Pattern(tile_pattern,palette,colour_mode,tiles_check=True):
                 if tiles_check:
                     #change colour if not available       
                     if  ~np.any(available_palette[:][:,0] == colour_seed):
-                        print('all gone')
+                        #print('all gone')
                         colour_seed = available_palette[0,0]
                 
                 if tile_pattern[8][0][location[0][j]][location[1][j]] >0:
@@ -632,14 +643,17 @@ def Colour_Pattern(tile_pattern,palette,colour_mode,tiles_check=True):
         #use up palette in turn
         elif colour_mode == 'deplete':
             colour_seed = available_palette[0,0]
-
-    
+  
     return tile_pattern
 
-"""
-The aim of this function is to count tiles used
-""" 
+
+
 def Count_Tiles(colour_pattern,palette):
+    """Count the number of tiles used in each shape and colour.
+
+    A report is printed to the console.    
+    """ 
+    
     mask = np.isnan(colour_pattern[8][0])
     shapes_used = np.floor(colour_pattern[8][0][~mask])
     colours_used = colour_pattern[8][2][~mask]
@@ -654,14 +668,25 @@ def Count_Tiles(colour_pattern,palette):
             print("The number of tiles of colour {}, shape {} required is {}/{}.".format(colour,shape,len(count[0]),amount))
 
 
-"""
-The aim of this function is to display the final result along with the tile orientation
-""" 
-def Plot_Pattern(colour_pattern):
-    colours_used = np.where(colour_pattern[8][2]==0,np.NaN,colour_pattern[8][2])
+
+def Plot_Pattern(coloured_pattern,cmap="Pastel2_r"):
+    """Take a Canvas array and output an image to the Plots pane.
+    
+    If seaborn and matplotlib are not available write the 3D array to the console.
+    The image is coloured plus symbols for tile type and orientation
+    This function only has access to 18 basic Lego 1x1 tiles.
+    It works by iterating over the array and converting the tile numbers into symbols.
+    
+    A future update would allow the colours to be correctly applied and the file exported
+    to disc.
+    """
+
+    # replace the 0 with NaN so the plot looks correct
+    colours_used = np.where(coloured_pattern[8][2]==0,np.NaN,coloured_pattern[8][2])
+    
     # replace the numbers for the tile orientation with symbols
-    legend = colour_pattern[8][0].copy().tolist()
-    shape = colour_pattern[8][0].shape
+    legend = coloured_pattern[8][0].copy().tolist()
+    shape = coloured_pattern[8][0].shape
 
     for i in range(0, shape[0]):
         for j in range(0, shape[1]):
@@ -673,130 +698,78 @@ def Plot_Pattern(colour_pattern):
         import matplotlib.pyplot as plt
         fig = plt.figure()
         fig.set_size_inches(shape)
-        sb.heatmap(colours_used,annot=legend, fmt = '', cmap="Pastel2_r")    
+        sb.heatmap(colours_used,annot=legend, fmt = '', cmap=cmap)    
     except:
-        print(colour_pattern[8])
+        print(coloured_pattern[8])
 
 
-"""
-The aim of this function is to display the final result along with the tile orientation
-""" 
-def Ldraw_Pattern(colour_pattern,filename=datetime.now().strftime('%A %d%m%Y %H%M%S')):
-    output_string = ldraw_header
 
-    colours_used = np.where(colour_pattern[8][2]==0,np.NaN,colour_pattern[8][2])
-    # replace the numbers for the tile orientation with symbols
-    legend = colour_pattern[8][0].copy().tolist()
-    shape = colour_pattern[8][0].shape
-    number_tiles = len(np.where(colour_pattern[8][0]>0)[0])
+def Ldraw_Pattern(coloured_pattern,filename=datetime.now().strftime('%A %d%m%Y %H%M%S'),base_plate=False):
+    """Take a Canvas array and output an LDraw File.
+    
+    If no filename is specified, the current DateTime string is used. This function
+    only has access to 18 basic Lego 1x1 tiles plus the 32x32 base plate. It works by
+    iterating over the array and converting the position into an X,Y coordinate, with
+    tile orientation and colouring.
+    
+    A future update would be to work out how many 32x32 base plates are needed to place the
+    bricks on and centre them appropriately.
+    """
 
-    output_string = output_string + str(number_tiles)
+    colours_used = np.where(coloured_pattern[8][2]==0,np.NaN,coloured_pattern[8][2])
+    legend = coloured_pattern[8][0]
+    shape = coloured_pattern[8][0].shape
+    number_tiles = len(np.where(coloured_pattern[8][0]>0)[0])
+
+    output_string = ldraw_header + str(number_tiles)
     
     lines = [output_string]
 
     for i in range(0, shape[0]):
         for j in range(0, shape[1]):
             if ~np.isnan(legend[i][j]) and ~np.isnan(colours_used[i][j]):
-                string = "1 " + str(int(colours_used[i][j])) + " " + str(i*20) + ".000000 -8.000000 " + str(j*-20) + ".000000 " + ldraw_dict[legend[i][j]]
+                
+                # -1, 7, 9, 16 y is 0.000000 else -8.000000 -Y is height
+                if int(floor(legend[i][j])) == 7 or int(floor(legend[i][j])) == 9 or int(floor(legend[i][j])) == 16:
+                    y_height = "0.000000 "
+                else:
+                    y_height = "-8.000000 "
+                # Create line in LDraw file
+                string = "1 " + str(int(colours_used[i][j])) + " " + str(i*20) + ".000000 "+ y_height + str(j*-20) + ".000000 " + ldraw_dict[legend[i][j]]
                 lines.append(string) 
 
     # open a file in write mode
     with open("pydotART "+filename+".ldr", 'w',encoding='utf8') as f:
         for line in lines:
             f.write(line)
-            f.write('\n')
+            f.write('\n') 
+    # close the file
+    f.close
 
-### Run Program ###
+### Example Configuration ###
+# What tiles are available? [Colour,Shape,Amount]
+palette = np.array([[5,3.,16],
+                    [323,3.,16],
+                    [31,3.,16],
+                    [29,2.,8],
+                    [14,2.,4],
+                    ])
+
+# Canvas Size and Colour
+x=8
+y=8
+colour=272
+
+# How wide should the untiled border around the edge be?
+border=0
+
+# What is the location and size of a central gap [x,y,x_length, y_length]
 cutout=np.array([3,3,4,4])
-translation = [1,1]
 
-## Knots and Dots Frame ## 
-# canvas = Canvas(x,y,colour,border,cutout)  
+# Where should the tiling start from?
+canvas_seed=[0,0]
 
-# tile_pattern = Tile_Pattern(canvas,[0,0],pattern["leaf"],translation,fill=False,wrap=False)
+# Where should the next tile be placed relative to the previous?
+translation=np.array([0,0])
 
-# tile_pattern = Tile_Pattern(canvas,[3,0],pattern["leaf"],translation,fill=False,wrap=True,tile_ID=tile_pattern[9])
-
-# tile_pattern = Tile_Pattern(canvas,[5,0],pattern["leaf"],translation,fill=False,wrap=True,tile_ID=tile_pattern[9])
-
-# tile_pattern = Tile_Pattern(canvas,[2,0],pattern["dot"],translation,fill=False,wrap=False,tile_ID=tile_pattern[9])
-
-# tile_pattern = Tile_Pattern(canvas,[0,1],pattern["dot"],translation,fill=False,wrap=False,tile_ID=tile_pattern[9])
-
-# tile_pattern = Tile_Pattern(canvas,[7,0],pattern["leaf"],translation,fill=False,wrap=True,tile_ID=tile_pattern[9])
-
-# tile_pattern = Tile_Pattern(canvas,[-1,6],pattern["leaf"],translation,fill=False,wrap=True,tile_ID=tile_pattern[9])
-
-# colour_pattern = Colour_Pattern(tile_pattern,palette,colour_mode = 'pass')
-# count_tiles = Count_Tiles(colour_pattern,palette)
-# Plot_Pattern(colour_pattern)
-
-## Knots Frame ## 
-# canvas = Canvas(x,y,colour,border,cutout) 
-# tile_pattern = Tile_Pattern(canvas,[0,0],pattern["leaf"],translation,fill=True,wrap=True)
-
-# colour_pattern = Colour_Pattern(tile_pattern,palette,colour_mode = 'pass')
-# count_tiles = Count_Tiles(colour_pattern,palette)
-# Plot_Pattern(colour_pattern)
-
-## Circles Frame ##
-# canvas = Canvas(x,y,colour,border,cutout) 
-# tile_pattern = Spiral_Pattern(canvas,[0,0],pattern["circle"],rotate=0)
-
-# reduced_palette = palette[np.where(palette[:,1]==3)]
-# colour_pattern = Colour_Pattern(tile_pattern,reduced_palette,colour_mode = 'sequence',tiles_check=True)
-# count_tiles = Count_Tiles(colour_pattern,reduced_palette)
-# Plot_Pattern(colour_pattern)
-# Ldraw_Pattern(colour_pattern)
-
-## Scales Frame ##
-# canvas = Canvas(x,y,colour,border,cutout) 
-# for i in range(0,canvas[0]):
-    
-#     if i ==0:
-#         tile_ID=1
-    
-#     if i % 2 == 0:
-#         canvas_seed = [i,0]
-#     else:        
-#         canvas_seed = [i,1]
-#     tile_pattern = Tile_Pattern(canvas,canvas_seed,pattern["scale"],translation=[0,2],fill=False,wrap=False,rotate=0,tile_ID=tile_ID)
-#     tile_ID=tile_pattern[9]
-
-# reduced_palette = palette[np.where(palette[:,1]==3)]
-# colour_pattern = Colour_Pattern(tile_pattern,reduced_palette,colour_mode = 'pass',tiles_check=True)
-# count_tiles = Count_Tiles(colour_pattern,reduced_palette)
-# Plot_Pattern(colour_pattern)
-
-## auto Loop over designs ##
-# for i in pattern:
-#     translation = [pattern[i].shape[0],pattern[i].shape[1]]
-#     colour_mode = colour_modes[np.random.randint(0,3)]
-#     canvas = Canvas(x,y,colour,border,cutout) 
-#     tile_pattern = Tile_Pattern(canvas,[0,0],pattern[i],translation,fill=True,wrap=True,rotate=0)
-#     tile_pattern[8][2] = tile_pattern[8][0]
-#     colour_pattern = Colour_Pattern(tile_pattern,palette,colour_mode, tiles_check=False)
-#     Plot_Pattern(tile_pattern)
-
-# Mirroring
-translation = [0,0]
-chosen_pattern = pattern["tulip"]
-width_x = len(chosen_pattern[:,0])
-width_y = len(chosen_pattern[0,:])
-canvas = Canvas(x,y,colour,border,cutout)
-
-for i in range(0,int(x/width_x),width_x):
-    for j in range(0,int(y/width_y),width_y):
-            
-        if i ==0 and j == 0:
-            tile_ID=1
-    
-        canvas_seed = [i,j]
-        tile_pattern = Tile_Pattern(canvas,canvas_seed,chosen_pattern,translation=[0,0],fill=False,wrap=False,rotate=0,tile_ID=tile_ID)
-        canvas = tile_pattern
-        tile_ID=tile_pattern[9]
-
-tile_pattern = Mirror_Pattern(tile_pattern,mode=["X","Y"])
-colour_pattern = Colour_Pattern(tile_pattern,palette,colour_mode = 'pass')
-count_tiles = Count_Tiles(colour_pattern,palette)
-Plot_Pattern(colour_pattern)
+### Write Program Here ###
