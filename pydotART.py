@@ -73,7 +73,9 @@ tile_dict = {0:" ",
         16:"☆",
         17:"♡"}
 
-ldraw_dict = {-1:"1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 1.000000 3811.dat",
+ldraw_dict = {
+    -6:"1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 1.000000 3958.dat",
+    -1:"1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 1.000000 3811.dat",
              1:"1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 1.000000 3070b.dat",
              1.1:"◆",
              1.3:"◆",
@@ -704,7 +706,7 @@ def Plot_Pattern(coloured_pattern,cmap="Pastel2_r"):
 
 
 
-def Ldraw_Pattern(coloured_pattern,filename=datetime.now().strftime('%A %d%m%Y %H%M%S'),base_plate=False):
+def Ldraw_Pattern(coloured_pattern,filename=datetime.now().strftime('%A %d%m%Y %H%M%S'),add_steps=False,base_plate=False):
     """Take a Canvas array and output an LDraw File.
     
     If no filename is specified, the current DateTime string is used. This function
@@ -718,25 +720,35 @@ def Ldraw_Pattern(coloured_pattern,filename=datetime.now().strftime('%A %d%m%Y %
 
     colours_used = np.where(coloured_pattern[8][2]==0,np.NaN,coloured_pattern[8][2])
     legend = coloured_pattern[8][0]
+    tile_IDs = coloured_pattern[8][1]
     shape = coloured_pattern[8][0].shape
     number_tiles = len(np.where(coloured_pattern[8][0]>0)[0])
 
     output_string = ldraw_header + str(number_tiles)
     
     lines = [output_string]
+    #need to iterate over tile ID then x,y
+    for k in np.unique(tile_IDs):
+        locations = np.where(tile_IDs==k)
+        for l in range(0,len(list(locations[0]))):
+            i = list(locations[0])[l]
+            j = list(locations[1])[l]
 
-    for i in range(0, shape[0]):
-        for j in range(0, shape[1]):
             if ~np.isnan(legend[i][j]) and ~np.isnan(colours_used[i][j]):
-                
+
                 # -1, 7, 9, 16 y is 0.000000 else -8.000000 -Y is height
-                if int(floor(legend[i][j])) == 7 or int(floor(legend[i][j])) == 9 or int(floor(legend[i][j])) == 16:
+                if int(np.floor(legend[i][j])) == 7 or int(np.floor(legend[i][j])) == 9 or int(np.floor(legend[i][j])) == 16:
                     y_height = "0.000000 "
                 else:
                     y_height = "-8.000000 "
                 # Create line in LDraw file
                 string = "1 " + str(int(colours_used[i][j])) + " " + str(i*20) + ".000000 "+ y_height + str(j*-20) + ".000000 " + ldraw_dict[legend[i][j]]
-                lines.append(string) 
+                lines.append(string)
+                #check if steps are chosen and tile ID is about to change
+        if add_steps == True:
+            string = "0 STEP"
+            lines.append(string)
+
 
     # open a file in write mode
     with open("pydotART "+filename+".ldr", 'w',encoding='utf8') as f:
