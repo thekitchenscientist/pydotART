@@ -525,7 +525,66 @@ def Spiral_Pattern(canvas,canvas_seed,pattern,direction=1,rotate=0,tile_ID = 1):
     canvas[9] =  tile_ID  
     return canvas
 
+def Spiral_Pattern_List(canvas,canvas_seed,pattern_list,direction=1,rotate=0,tile_ID = 1):
+    """Apply the pattern across the canvas working down then around in a spiral.
+    
+    Returns the canvas with the applied tiles.
+    
+    A future update would allow spirals both clockwise and counter-clockwise.
+    """ 
+    
+    
+    width_x = len(pattern_list[0][8][0][:,0])
+    width_y = len(pattern_list[0][8][0][0,:])
 
+    x = canvas[0]
+    y = canvas[1]
+
+    # x and y must be multiple or the code stops working
+    if x % width_x  != 0:
+        x = int((np.floor(x/width_x) +1)* width_x)
+    if y % width_y  != 0:
+        y = int((np.floor(y/width_y) +1)* width_y)
+
+    offset_x = canvas_seed[0]
+    offset_y = canvas_seed[1]
+
+    extent_x = round(x/width_x)
+    extent_y = round(y/width_y)
+
+    current_xy = [offset_x,offset_x]
+            
+    for i in range(0,len(pattern_list)):
+
+        #print(current_xy)    how to just apply list and not use Pattern function
+        result = Pattern(canvas,current_xy[0],current_xy[1],pattern_list[i][8][0],[0,0],tile_ID,False,rotate)
+        canvas[8][0] = result[0].copy()
+        canvas[8][1] = result[1].copy()
+        tile_ID = result[2]           
+
+        if current_xy[0] < x-width_x and current_xy[1] == offset_y:
+            current_xy[0] += width_x
+        elif current_xy[0] == x-width_x  and current_xy[1] < y-width_y: 
+            current_xy[0] = x-width_x       
+            current_xy[1] += width_y
+        elif current_xy[1] == y-width_y  and current_xy[0] > offset_x:
+            current_xy[0] -= width_x       
+            current_xy[1] = y-width_y   
+        elif current_xy[0] == offset_x  and current_xy[1] > offset_y+width_y:
+            current_xy[0] = offset_x       
+            current_xy[1] -= width_y           
+        elif current_xy[0] == offset_x and current_xy[1] == offset_y+width_y:
+            x = x - width_x
+            y = y - width_y
+            offset_x = offset_x + width_x
+            offset_y = offset_y + width_y
+            extent_x = round(x/width_x)-2
+            extent_y = round(y/width_y)-2    
+            current_xy[0] = offset_x       
+            current_xy[1] = offset_y   
+
+    canvas[9] =  tile_ID  
+    return canvas
 
 def Rotate_Pattern(pattern, angle=0):
     """Given an input tile orientation, rotate by the angle required.
