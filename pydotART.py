@@ -555,12 +555,10 @@ def Spiral_Pattern_List(canvas,canvas_seed,pattern_list,direction=1,rotate=0,til
     current_xy = [offset_x,offset_x]
             
     for i in range(0,len(pattern_list)):
-
-        #print(current_xy)    how to just apply list and not use Pattern function
-        result = Pattern(canvas,current_xy[0],current_xy[1],pattern_list[i][8][0],[0,0],tile_ID,False,rotate)
-        canvas[8][0] = result[0].copy()
-        canvas[8][1] = result[1].copy()
-        tile_ID = result[2]           
+        
+        #much tidier way to apply pattern to a larger canvas
+        canvas[8][0][current_xy[0]:current_xy[0]+pattern_list[i][8][0].shape[0], current_xy[1]:current_xy[1]+pattern_list[i][8][0].shape[1]] = pattern_list[i][8][0]
+        canvas[8][1][current_xy[0]:current_xy[0]+pattern_list[i][8][0].shape[0], current_xy[1]:current_xy[1]+pattern_list[i][8][1].shape[1]] = pattern_list[i][8][1]
 
         if current_xy[0] < x-width_x and current_xy[1] == offset_y:
             current_xy[0] += width_x
