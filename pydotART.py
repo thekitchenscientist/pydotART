@@ -692,7 +692,7 @@ def Colour_Pattern(tile_pattern,palette,colour_mode,tiles_check=True):
             else:
                 colour_seed = available_palette[palette_position,0]
         elif colour_mode == 'random':
-            colour_seed = np.random.randint(1,len(available_palette[:,0])+1)
+            colour_seed = available_palette[np.random.randint(0,len(available_palette[:,0])-1),0]
         #loop over palette in turn
         elif colour_mode == 'sequence': # and ~np.any(tile_pattern[8][1]==i+1):
             palette_position += 1
