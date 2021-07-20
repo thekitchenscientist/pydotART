@@ -43,8 +43,8 @@ canvas_seed=[0,0]
 # Where should the next tile be placed relative to the previous?
 translation=np.array([0,0])
 
-width_x = 6
-width_y = 6
+width_x = 3
+width_y = 3
 
 colour = 15
 colour_mode = 'random'
@@ -177,9 +177,28 @@ def fill_with_worm(worm_canvas,starting_y,max_worm_length,tile_ID):
     worm_canvas[8][1][np.where(worm_canvas[8][1]==0)]=tile_ID
     return worm_canvas
 
+def Larger_Canvas_Rotation(original):
+    rot_90 = da.Rotate_Pattern(original[8][0], angle=90)
+    rot_ID_90 = np.rot90(original[8][1], k=-1)
+    rot_180 = da.Rotate_Pattern(rot_90, angle=90)
+    rot_ID_180 = np.rot90(rot_ID_90, k=-1)
+    rot_270 = da.Rotate_Pattern(rot_180, angle=90)
+    rot_ID_270 = np.rot90(rot_ID_180, k=-1)
+    larger_canvas = da.Canvas(original[0]*2,original[1]*2,colour,border,cutout)
+    #tidy way to apply pattern to a larger canvas
+    larger_canvas[8][0][0:original[0], 0:original[1]] = original[8][0]
+    larger_canvas[8][1][0:original[0], 0:original[1]] = original[8][1]
+    larger_canvas[8][0][0:original[0], original[1]:larger_canvas[1]] = rot_90
+    larger_canvas[8][1][0:original[0], original[1]:larger_canvas[1]] = rot_ID_90
+    larger_canvas[8][0][original[0]:larger_canvas[0], original[1]:larger_canvas[1]] = rot_180
+    larger_canvas[8][1][original[0]:larger_canvas[0], original[1]:larger_canvas[1]] = rot_ID_180
+    larger_canvas[8][0][original[0]:larger_canvas[0], 0:original[1]] = rot_270
+    larger_canvas[8][1][original[0]:larger_canvas[0], 0:original[1]] = rot_ID_270
+    return larger_canvas
+
 canvas = da.Canvas(width_x*width_y,width_x*width_y,colour,border,cutout)
 pattern_list = []
-for i in range(width_x,width_x*width_y+1): 
+for i in range(2,width_x*width_y+1): 
     worm_canvas = da.Canvas(width_x,width_y,colour,border,cutout)
     starting_y = 0
     result = fill_with_worms(worm_canvas,starting_y,i,tile_ID)
@@ -187,13 +206,20 @@ for i in range(width_x,width_x*width_y+1):
     tile_ID +=1
     pattern_list.append(result)
     
-canvas = da.Spiral_Pattern_List(canvas,canvas_seed,pattern_list,direction=1,rotate=0,tile_ID = 1)
-
 palette = np.array([[22,1.,36],
                     [15,1.,36],
                     [14,2.,36]
                     ])
 colour_mode = 'sequence'
-colour_pattern = da.Colour_Pattern(canvas,palette,colour_mode,tiles_check=False)
 
-da.Ldraw_Pattern(canvas,"unique worms patterns" +str(width_x)+ "x" +str(width_y)+ " DOTS",add_steps=True)
+larger_canvas_list = []
+for i in range(0,len(pattern_list)):
+    larger_canvas = Larger_Canvas_Rotation(pattern_list[i])   
+    larger_canvas_list.append(larger_canvas)
+
+canvas_scale = int(np.sqrt(len(pattern_list)))    
+canvas = da.Canvas(width_x*width_x*canvas_scale,width_y*width_y*canvas_scale,colour,border,cutout)    
+canvas = da.Spiral_Pattern_List(canvas,canvas_seed,larger_canvas_list,direction=1,rotate=0,tile_ID = 1)
+    
+colour_pattern = da.Colour_Pattern(canvas,palette,colour_mode,tiles_check=False)
+da.Ldraw_Pattern(canvas,"tiled rotated worms patterns" +str(width_x)+ "x" +str(width_y),add_steps=True)  

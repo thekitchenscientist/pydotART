@@ -425,7 +425,7 @@ def Mirror_Pattern(canvas,mode):
             for j in range (0,count):
                 new_x = locations_list[0][j]
                 new_y = locations_list[1][j]
-
+                #this only works for 3 tiles not 4
                 if new_x == origin[0] and new_y == origin[1]:
                     continue
                 elif new_x == origin[0] and new_y > origin[1]:
@@ -606,7 +606,16 @@ def Rotate_Pattern(pattern, angle=0):
         new_pattern = np.rot90(new_pattern, k=-1)
 
         for x in np.nditer(new_pattern, op_flags = ['readwrite']):
-            if x % 10 == 8 or x % 10 == 7:
+            #if 3
+            if x == 42:
+                x[...] = 48
+            elif x == 44:
+                x[...] = 42
+            elif x == 46:
+                x[...] = 44
+            elif x == 48:
+                x[...] = 46                  
+            elif x % 10 == 8 or x % 10 == 7:
                 x[...] = x-6
             elif x % 10 == 0:
                 x[...]
