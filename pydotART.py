@@ -697,7 +697,7 @@ def Colour_Pattern(tile_pattern,palette,colour_mode,tiles_check=True):
         #if different tesselation change colour    
         elif colour_mode == 'alternating':
             if colour_seed == available_palette[palette_position,0]:
-                colour_seed = available_palette[palette_position,1]
+                colour_seed = available_palette[len(available_palette[:,0])-1,0]
             else:
                 colour_seed = available_palette[palette_position,0]
         elif colour_mode == 'random':
@@ -711,7 +711,7 @@ def Colour_Pattern(tile_pattern,palette,colour_mode,tiles_check=True):
         #use up palette in turn
         elif colour_mode == 'deplete':
             colour_seed = available_palette[0,0]
-  
+
     return tile_pattern
 
 
