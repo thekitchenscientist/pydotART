@@ -6,4 +6,4 @@ There are different functions available to apply that pattern to the canvas.
 Outputs can be a building plan or LDraw digital representation.
 
 Examples builds are shown at 
-https://rebrickable.com/sets/30556-1/mini-frame/?inventory=1#alt_builds
+https://rebrickable.com/sets/30556-1/mini-frame/?inventory=1#alt_builds and https://rebrickable.com/sets/41935-1/lots-of-dots/?inventory=1#alt_builds
